@@ -9,15 +9,11 @@ import SwiftUI
 
 struct MainTimerView: View {
     @Environment(PurchaseState.self) private var purchaseState
+    @State private var viewModel = TimerViewModel()
     @State private var hours: Int = 0
     @State private var minutes: Int = 10
     @State private var seconds: Int = 0
-    @State private var isTimerRunning = false
     @State private var showingTimePicker = false
-
-    var totalSeconds: Int {
-        hours * 3600 + minutes * 60 + seconds
-    }
 
     var body: some View {
         NavigationStack {
@@ -30,12 +26,12 @@ struct MainTimerView: View {
 
                     // Circle with time in center
                     CircleProgressView(
-                        progress: 1.0,
-                        remainingTime: totalSeconds,
+                        progress: viewModel.progress,
+                        remainingTime: viewModel.remainingSeconds,
                         color: Constants.Colors.defaultOrange,
-                        isTimerRunning: isTimerRunning,
+                        isTimerRunning: viewModel.isRunning,
                         onTimeTap: {
-                            if !isTimerRunning {
+                            if !viewModel.isRunning {
                                 showingTimePicker = true
                             }
                         }
@@ -51,6 +47,8 @@ struct MainTimerView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingTimePicker) {
+                syncPickerToViewModel()
+            } content: {
                 TimePickerSheet(
                     hours: $hours,
                     minutes: $minutes,
@@ -59,18 +57,41 @@ struct MainTimerView: View {
                 .presentationDetents([.height(350)])
                 .presentationDragIndicator(.visible)
             }
+            .onAppear {
+                syncViewModelToPicker()
+            }
         }
     }
 
     private var timerControls: some View {
         HStack(spacing: 16) {
-            if isTimerRunning {
+            if viewModel.isRunning {
                 Button(action: pauseTimer) {
                     Text("Pause")
                         .font(.system(size: 18, weight: .semibold))
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
                         .background(Constants.Colors.secondaryBackground)
+                        .foregroundStyle(.white)
+                        .cornerRadius(12)
+                }
+
+                Button(action: resetTimer) {
+                    Text("Reset")
+                        .font(.system(size: 18, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Constants.Colors.secondaryBackground)
+                        .foregroundStyle(.white)
+                        .cornerRadius(12)
+                }
+            } else if viewModel.isPaused {
+                Button(action: resumeTimer) {
+                    Text("Resume")
+                        .font(.system(size: 18, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Constants.Colors.defaultOrange)
                         .foregroundStyle(.white)
                         .cornerRadius(12)
                 }
@@ -99,17 +120,33 @@ struct MainTimerView: View {
         .padding(.horizontal)
     }
 
+    // MARK: - Actions
     private func startTimer() {
-        guard totalSeconds >= Constants.Timer.minimumDuration else { return }
-        isTimerRunning = true
+        viewModel.setDuration(hours: hours, minutes: minutes, seconds: seconds)
+        viewModel.start()
     }
 
     private func pauseTimer() {
-        isTimerRunning = false
+        viewModel.pause()
+    }
+
+    private func resumeTimer() {
+        viewModel.resume()
     }
 
     private func resetTimer() {
-        isTimerRunning = false
+        viewModel.reset()
+        syncViewModelToPicker()
+    }
+
+    // MARK: - Sync helpers
+    private func syncViewModelToPicker() {
+        viewModel.setDuration(hours: hours, minutes: minutes, seconds: seconds)
+    }
+
+    private func syncPickerToViewModel() {
+        // When sheet dismisses, update ViewModel with new picker values
+        viewModel.setDuration(hours: hours, minutes: minutes, seconds: seconds)
     }
 }
 

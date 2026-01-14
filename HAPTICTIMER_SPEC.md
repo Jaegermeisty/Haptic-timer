@@ -1,9 +1,16 @@
 # HapticTimer - Complete Technical Specification
 
-**Version:** 1.0  
-**Target Platform:** iOS 17+  
-**Last Updated:** January 14, 2026  
+**Version:** 1.1
+**Target Platform:** iOS 17+
+**Last Updated:** January 14, 2026
 **Developer:** Mathias Jaeger-Pedersen
+
+> **📝 LIVING DOCUMENT:** This specification is updated throughout development to reflect actual implementation decisions and design changes. The spec evolves with the project to maintain accuracy and serve as the single source of truth.
+
+---
+
+## Recent Changes
+- **v1.1 (Jan 14, 2026):** Changed from "cut arc" design to full circle. Time display moved to center with tap-to-edit instead of always-visible picker.
 
 ---
 
@@ -176,37 +183,47 @@ HapticTimer/
 
 #### Implementation Details
 
-**Picker Interface:**
+**Tap-to-Edit Interface:**
+- Time is displayed in the center of the circle
+- When timer is stopped, "tap to edit" hint appears below time
+- Tapping the time opens a bottom sheet with picker wheels
+- Sheet presents with `.presentationDetents([.height(350)])`
+
+**Picker Sheet:**
 ```swift
-// Scrolling wheel picker (like Apple Clock)
-HStack {
-    Picker("Hours", selection: $hours) {
-        ForEach(0..<24) { hour in
-            Text("\(hour)").tag(hour)
+// Bottom sheet with time picker
+NavigationStack {
+    VStack {
+        Text("Set Duration")
+
+        HStack {
+            VStack {
+                Text("Hours")
+                Picker("Hours", selection: $hours) {
+                    ForEach(0..<24) { Text("\($0)").tag($0) }
+                }
+                .pickerStyle(.wheel)
+            }
+
+            VStack {
+                Text("Minutes")
+                Picker("Minutes", selection: $minutes) {
+                    ForEach(0..<60) { Text(String(format: "%02d", $0)).tag($0) }
+                }
+                .pickerStyle(.wheel)
+            }
+
+            VStack {
+                Text("Seconds")
+                Picker("Seconds", selection: $seconds) {
+                    ForEach(0..<60) { Text(String(format: "%02d", $0)).tag($0) }
+                }
+                .pickerStyle(.wheel)
+            }
         }
+
+        Button("Done") { dismiss() }
     }
-    .pickerStyle(.wheel)
-    .frame(width: 80)
-    
-    Text(":")
-    
-    Picker("Minutes", selection: $minutes) {
-        ForEach(0..<60) { minute in
-            Text("\(minute)").tag(minute)
-        }
-    }
-    .pickerStyle(.wheel)
-    .frame(width: 80)
-    
-    Text(":")
-    
-    Picker("Seconds", selection: $seconds) {
-        ForEach(0..<60) { second in
-            Text("\(second)").tag(second)
-        }
-    }
-    .pickerStyle(.wheel)
-    .frame(width: 80)
 }
 ```
 
@@ -216,8 +233,8 @@ HStack {
 - Validation on start - show alert if invalid
 
 **State Management:**
-- Picker visible only when timer is stopped
-- Collapses/hides when timer starts
+- Picker only accessible when timer is stopped (button disabled when running)
+- Sheet dismissed when "Done" tapped
 - Preserves last set duration on reset
 
 ---
@@ -229,42 +246,63 @@ HStack {
 **Circle Dimensions:**
 - Diameter: 280pt (standard), 320pt (larger iPhones)
 - Stroke width: 20pt
-- Position: Vertically centered, slight offset upward
+- Position: Vertically centered
 
-**"Cut" Top Arc Design:**
+**Full Circle Design:**
 ```
-     [  10:00  ]  ← Time display
-    /           \
-   /             \
-  |               |  ← Full circle sides
-  |               |
-   \             /
-    \___________/    ← Bottom arc intact
+         ───
+       /     \
+      /       \
+     |  10:00  |  ← Time centered
+     | tap edit|  ← Hint when stopped
+      \       /
+       \_____/
 ```
 
-**Arc Cutout:**
-- Remove approximately 40° arc at the top (340° visible circle)
-- Time display sits in the cutout space
-- Font: SF Pro Rounded, Bold, 32pt
-- Color: White with 90% opacity
+**Time Display:**
+- Centered inside the circle
+- Font: SF Pro Rounded, Bold, 48pt
+- Color: White (#FFFFFF)
+- "tap to edit" hint: 12pt, white 50% opacity (only when stopped)
+- Tappable to open time picker sheet
 
 **Progress Fill:**
-- Starts at 12 o'clock position (top center)
-- Drains clockwise (270° → 180° → 90° → 0°)
+- Full circle (360°) track visible
+- Progress drains clockwise from 12 o'clock position
 - Smooth animation (60fps target)
 - **Free:** Orange fill (#FF8C42) on dark gray track (#2C2C2E)
 - **Premium:** User-selected color with same track
 
 **Implementation Notes:**
 ```swift
-Circle()
-    .trim(from: 0, to: progress) // progress = 0.0 to 1.0
-    .stroke(
-        selectedColor,
-        style: StrokeStyle(lineWidth: 20, lineCap: .round)
-    )
-    .rotationEffect(.degrees(-90)) // Start at top
-    .animation(.linear(duration: 0.1), value: progress)
+ZStack {
+    // Background track (full circle)
+    Circle()
+        .stroke(Constants.Colors.trackColor,
+                style: StrokeStyle(lineWidth: 20, lineCap: .round))
+
+    // Progress fill (drains clockwise from top)
+    Circle()
+        .trim(from: 0, to: progress) // progress = 0.0 to 1.0
+        .stroke(selectedColor,
+                style: StrokeStyle(lineWidth: 20, lineCap: .round))
+        .rotationEffect(.degrees(-90)) // Start at top
+        .animation(.linear(duration: 0.1), value: progress)
+
+    // Time display (center, tappable)
+    Button(action: showTimePicker) {
+        VStack {
+            Text(remainingTime.formattedTime())
+                .font(.system(size: 48, weight: .bold, design: .rounded))
+            if !isTimerRunning {
+                Text("tap to edit")
+                    .font(.system(size: 12))
+                    .opacity(0.5)
+            }
+        }
+    }
+    .disabled(isTimerRunning)
+}
 ```
 
 ---
