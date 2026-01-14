@@ -13,6 +13,7 @@ struct MainTimerView: View {
     @State private var minutes: Int = 10
     @State private var seconds: Int = 0
     @State private var isTimerRunning = false
+    @State private var showingTimePicker = false
 
     var totalSeconds: Int {
         hours * 3600 + minutes * 60 + seconds
@@ -24,72 +25,41 @@ struct MainTimerView: View {
                 Constants.Colors.background
                     .ignoresSafeArea()
 
-                VStack(spacing: 32) {
+                VStack(spacing: 0) {
                     Spacer()
 
-                    // Circle and Time Display
+                    // Circle with time in center
                     CircleProgressView(
                         progress: 1.0,
                         remainingTime: totalSeconds,
-                        color: Constants.Colors.defaultOrange
+                        color: Constants.Colors.defaultOrange,
+                        isTimerRunning: isTimerRunning,
+                        onTimeTap: {
+                            if !isTimerRunning {
+                                showingTimePicker = true
+                            }
+                        }
                     )
-
-                    Spacer()
-
-                    // Duration Picker (shown when timer stopped)
-                    if !isTimerRunning {
-                        durationPicker
-                    }
 
                     Spacer()
 
                     // Timer Controls
                     timerControls
-
-                    Spacer()
+                        .padding(.bottom, 40)
                 }
                 .padding()
             }
-            .navigationTitle("HapticTimer")
             .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showingTimePicker) {
+                TimePickerSheet(
+                    hours: $hours,
+                    minutes: $minutes,
+                    seconds: $seconds
+                )
+                .presentationDetents([.height(350)])
+                .presentationDragIndicator(.visible)
+            }
         }
-    }
-
-    private var durationPicker: some View {
-        HStack(spacing: 8) {
-            Picker("Hours", selection: $hours) {
-                ForEach(0..<24) { hour in
-                    Text("\(hour)").tag(hour)
-                }
-            }
-            .pickerStyle(.wheel)
-            .frame(width: 80)
-
-            Text(":")
-                .font(.system(size: 24, weight: .bold))
-                .foregroundStyle(.white)
-
-            Picker("Minutes", selection: $minutes) {
-                ForEach(0..<60) { minute in
-                    Text(String(format: "%02d", minute)).tag(minute)
-                }
-            }
-            .pickerStyle(.wheel)
-            .frame(width: 80)
-
-            Text(":")
-                .font(.system(size: 24, weight: .bold))
-                .foregroundStyle(.white)
-
-            Picker("Seconds", selection: $seconds) {
-                ForEach(0..<60) { second in
-                    Text(String(format: "%02d", second)).tag(second)
-                }
-            }
-            .pickerStyle(.wheel)
-            .frame(width: 80)
-        }
-        .frame(height: 150)
     }
 
     private var timerControls: some View {
