@@ -105,7 +105,7 @@ class StoreManager {
 
     // MARK: - Transaction Verification
 
-    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
+    nonisolated private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
         switch result {
         case .unverified:
             throw StoreError.unverified
@@ -118,19 +118,19 @@ class StoreManager {
 
     private func listenForTransactionUpdates() -> Task<Void, Error> {
         Task.detached { [weak self] in
+            guard let self else { return }
+
             for await result in Transaction.updates {
                 do {
-                    let transaction = try self?.checkVerified(result)
+                    let transaction = try self.checkVerified(result)
 
-                    // Update purchased products
-                    if let productID = transaction?.productID {
-                        await MainActor.run {
-                            self?.purchasedProductIDs.insert(productID)
-                        }
+                    // Update purchased products on main actor
+                    await MainActor.run {
+                        self.purchasedProductIDs.insert(transaction.productID)
                     }
 
                     // Finish transaction
-                    await transaction?.finish()
+                    await transaction.finish()
                 } catch {
                     print("❌ Transaction update failed: \(error)")
                 }

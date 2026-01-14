@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct HapticPointView: View {
     let point: HapticPointUI
@@ -15,25 +16,31 @@ struct HapticPointView: View {
     let onDrag: (Int) -> Void
 
     @State private var isDragging = false
-    @State private var draggedSeconds: Int?
+    @State private var dragAngle: Double?
 
-    private var displaySeconds: Int {
-        draggedSeconds ?? point.triggerSeconds
-    }
-
-    private var angle: Double {
+    private var displayAngle: Double {
+        if let dragAngle = dragAngle {
+            return dragAngle
+        }
         // Calculate angle based on trigger time
         // 0 seconds = top (0°), drains clockwise
-        let progress = Double(displaySeconds) / Double(totalDuration)
-        return progress * 360.0 - 90.0 // -90 to start at top
+        let progress = Double(point.triggerSeconds) / Double(totalDuration)
+        return progress * 360.0
     }
 
     private var position: CGPoint {
         let radius = circleSize / 2
-        let angleInRadians = angle.radians
-        let x = radius + cos(angleInRadians) * radius
-        let y = radius + sin(angleInRadians) * radius
+        // Convert angle to radians, accounting for starting at top (-90°)
+        let angleInRadians = (displayAngle - 90.0).radians
+        let x = circleSize / 2 + cos(angleInRadians) * radius
+        let y = circleSize / 2 + sin(angleInRadians) * radius
         return CGPoint(x: x, y: y)
+    }
+
+    private var displaySeconds: Int {
+        let progress = displayAngle / 360.0
+        let seconds = Int(progress * Double(totalDuration))
+        return seconds.snappedToInterval()
     }
 
     private func angleFromDragLocation(_ location: CGPoint) -> Double {
@@ -41,7 +48,7 @@ struct HapticPointView: View {
         let dx = location.x - center.x
         let dy = location.y - center.y
         let angleRadians = atan2(dy, dx)
-        var angleDegrees = angleRadians.degrees
+        var angleDegrees = Double(angleRadians.degrees)
 
         // Normalize to 0-360 range
         if angleDegrees < 0 {
@@ -71,10 +78,11 @@ struct HapticPointView: View {
                 )
                 .position(position)
                 .opacity(isDragging ? 0.8 : 1.0)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: position)
 
             // Time label while dragging
-            if isDragging, let seconds = draggedSeconds {
-                Text(seconds.formattedTime())
+            if isDragging {
+                Text(displaySeconds.formattedTime())
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8)
@@ -87,28 +95,49 @@ struct HapticPointView: View {
                     )
             }
         }
-        .gesture(
-            point.isZeroPoint ? nil : DragGesture(minimumDistance: 0)
-                .onChanged { value in
-                    if !isDragging {
-                        isDragging = true
-                    }
-                    let angle = angleFromDragLocation(value.location)
-                    let newSeconds = secondsFromAngle(angle)
-                    draggedSeconds = newSeconds
-                }
+        .frame(width: circleSize, height: circleSize)
+        .contentShape(Rectangle())
+        .simultaneousGesture(
+            // Tap gesture for opening pattern selector
+            TapGesture()
                 .onEnded { _ in
-                    if let seconds = draggedSeconds {
-                        onDrag(seconds)
+                    if !point.isZeroPoint && !isDragging {
+                        onTap()
                     }
-                    isDragging = false
-                    draggedSeconds = nil
                 }
         )
-        .onTapGesture {
-            if !isDragging && !point.isZeroPoint {
-                onTap()
-            }
-        }
+        .simultaneousGesture(
+            // Long press + drag for moving the point
+            point.isZeroPoint ? nil : LongPressGesture(minimumDuration: 0.3)
+                .sequenced(before: DragGesture())
+                .onChanged { value in
+                    switch value {
+                    case .second(true, let drag):
+                        if let drag = drag {
+                            if !isDragging {
+                                // Haptic feedback when drag starts
+                                let generator = UIImpactFeedbackGenerator(style: .medium)
+                                generator.impactOccurred()
+                            }
+                            isDragging = true
+                            let angle = angleFromDragLocation(drag.location)
+                            dragAngle = angle
+                        }
+                    default:
+                        break
+                    }
+                }
+                .onEnded { value in
+                    if isDragging, let angle = dragAngle {
+                        let newSeconds = secondsFromAngle(angle)
+                        onDrag(newSeconds)
+                        // Haptic feedback when point snaps to position
+                        let generator = UIImpactFeedbackGenerator(style: .light)
+                        generator.impactOccurred()
+                    }
+                    isDragging = false
+                    dragAngle = nil
+                }
+        )
     }
 }
