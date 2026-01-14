@@ -14,6 +14,7 @@ struct MainTimerView: View {
     @State private var minutes: Int = 10
     @State private var seconds: Int = 0
     @State private var showingTimePicker = false
+    @State private var selectedPoint: HapticPointUI?
 
     var body: some View {
         NavigationStack {
@@ -69,6 +70,23 @@ struct MainTimerView: View {
                     seconds: $seconds
                 )
                 .presentationDetents([.height(350)])
+                .presentationDragIndicator(.visible)
+            }
+            .sheet(item: $selectedPoint) { point in
+                PatternSelectorSheet(
+                    point: point,
+                    onSelect: { pattern in
+                        viewModel.updatePointPattern(point.id, to: pattern)
+                    },
+                    onDelete: {
+                        viewModel.removeHapticPoint(point)
+                    },
+                    onPreview: { pattern in
+                        // TODO: Implement haptic preview
+                        print("Preview pattern: \(pattern.displayName)")
+                    }
+                )
+                .presentationDetents([.height(500)])
                 .presentationDragIndicator(.visible)
             }
             .onAppear {
@@ -189,8 +207,7 @@ struct MainTimerView: View {
     }
 
     private func handlePointTap(_ point: HapticPointUI) {
-        // TODO: Show pattern selector sheet
-        print("Tapped point at \(point.triggerSeconds)s - pattern: \(point.pattern.displayName)")
+        selectedPoint = point
     }
 
     private func handlePointDrag(_ point: HapticPointUI, to newSeconds: Int) {

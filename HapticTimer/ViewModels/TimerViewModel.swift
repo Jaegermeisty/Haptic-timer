@@ -10,7 +10,7 @@ import Combine
 import Observation
 
 // MARK: - Haptic Point UI Model
-struct HapticPointUI: Identifiable {
+struct HapticPointUI: Identifiable, Hashable {
     let id: UUID
     var triggerSeconds: Int // Time remaining when this fires (e.g., 300 = fires at 5:00)
     var pattern: HapticPattern
