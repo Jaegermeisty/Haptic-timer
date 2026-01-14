@@ -44,6 +44,20 @@ enum Constants {
         static let trackColor = Color(hex: "2C2C2E")
         static let defaultOrange = Color(hex: "FF8C42")
         static let defaultOrangeHex = "FF8C42"
+
+        // Premium color options (10 colors total)
+        static let premiumColors: [(name: String, hex: String)] = [
+            ("Orange", "FF8C42"),     // Default
+            ("Pink", "FF6B9D"),
+            ("Purple", "9B72FF"),
+            ("Blue", "4A90E2"),
+            ("Cyan", "4ECDC4"),
+            ("Green", "50E3C2"),
+            ("Lime", "A8E063"),
+            ("Yellow", "FFD93D"),
+            ("Red", "FF6B6B"),
+            ("Indigo", "6C5CE7")
+        ]
     }
 
     // Purchase

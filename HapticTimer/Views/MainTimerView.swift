@@ -19,6 +19,8 @@ struct MainTimerView: View {
     @State private var showingTimePicker = false
     @State private var selectedPoint: HapticPointUI?
     @State private var showingSaveSheet = false
+    @State private var showingColorPicker = false
+    @State private var selectedColorHex: String = Constants.Colors.defaultOrangeHex
 
     var body: some View {
         NavigationStack {
@@ -34,7 +36,7 @@ struct MainTimerView: View {
                         progress: viewModel.progress,
                         remainingTime: viewModel.remainingSeconds,
                         totalDuration: viewModel.totalDurationSeconds,
-                        color: Constants.Colors.defaultOrange,
+                        color: Color(hex: selectedColorHex),
                         isTimerRunning: viewModel.isRunning,
                         hapticPoints: viewModel.hapticPoints,
                         onTimeTap: {
@@ -52,10 +54,16 @@ struct MainTimerView: View {
 
                     Spacer()
 
-                    // Add Haptic Point Button
+                    // Add Haptic Point and Color Buttons
                     if !viewModel.isRunning {
-                        addPointButton
-                            .padding(.bottom, 16)
+                        HStack(spacing: 12) {
+                            addPointButton
+
+                            if purchaseState.isPremium {
+                                colorPickerButton
+                            }
+                        }
+                        .padding(.bottom, 16)
                     }
 
                     // Timer Controls
@@ -103,9 +111,19 @@ struct MainTimerView: View {
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showingSaveSheet) {
-                SaveConfigSheet(viewModel: viewModel, modelContext: modelContext)
+                SaveConfigSheet(viewModel: viewModel, modelContext: modelContext, colorHex: selectedColorHex)
                     .presentationDetents([.height(200)])
                     .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showingColorPicker) {
+                ColorPickerSheet(
+                    currentColorHex: selectedColorHex,
+                    onSelect: { hex in
+                        selectedColorHex = hex
+                    }
+                )
+                .presentationDetents([.height(500)])
+                .presentationDragIndicator(.visible)
             }
             .onAppear {
                 syncViewModelToPicker()
@@ -133,6 +151,18 @@ struct MainTimerView: View {
             .cornerRadius(10)
         }
         .disabled(!viewModel.canAddHapticPoint(isPremium: purchaseState.isPremium))
+    }
+
+    private var colorPickerButton: some View {
+        Button(action: { showingColorPicker = true }) {
+            Circle()
+                .fill(Color(hex: selectedColorHex))
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Circle()
+                        .stroke(.white.opacity(0.3), lineWidth: 2)
+                )
+        }
     }
 
     private var timerControls: some View {
@@ -251,6 +281,9 @@ struct MainTimerView: View {
         hours = viewModel.totalDurationSeconds / 3600
         minutes = (viewModel.totalDurationSeconds % 3600) / 60
         seconds = viewModel.totalDurationSeconds % 60
+
+        // Load color
+        selectedColorHex = config.circleColorHex
     }
 }
 

@@ -11,6 +11,7 @@ import SwiftData
 struct SaveConfigSheet: View {
     let viewModel: TimerViewModel
     let modelContext: ModelContext
+    let colorHex: String
 
     @Environment(\.dismiss) private var dismiss
     @State private var configName: String = ""
@@ -72,8 +73,8 @@ struct SaveConfigSheet: View {
         let trimmedName = configName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return }
 
-        // Create new configuration from current view model state
-        let config = TimerConfiguration(name: trimmedName, from: viewModel)
+        // Create new configuration from current view model state with selected color
+        let config = TimerConfiguration(name: trimmedName, from: viewModel, colorHex: colorHex)
 
         // Save to SwiftData
         modelContext.insert(config)
@@ -89,5 +90,9 @@ struct SaveConfigSheet: View {
     let viewModel = TimerViewModel()
     viewModel.setDuration(hours: 0, minutes: 10, seconds: 0)
 
-    return SaveConfigSheet(viewModel: viewModel, modelContext: container.mainContext)
+    return SaveConfigSheet(
+        viewModel: viewModel,
+        modelContext: container.mainContext,
+        colorHex: Constants.Colors.defaultOrangeHex
+    )
 }
