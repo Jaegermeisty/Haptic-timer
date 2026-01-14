@@ -16,6 +16,7 @@ struct CircleProgressView: View {
     let hapticPoints: [HapticPointUI]
     let onTimeTap: () -> Void
     let onPointTap: (HapticPointUI) -> Void
+    let onPointDrag: (HapticPointUI, Int) -> Void
 
     private var circleSize: CGFloat {
         // TODO: Adjust based on device size
@@ -58,6 +59,9 @@ struct CircleProgressView: View {
                         totalDuration: totalDuration,
                         onTap: {
                             onPointTap(point)
+                        },
+                        onDrag: { newSeconds in
+                            onPointDrag(point, newSeconds)
                         }
                     )
                 }
@@ -103,7 +107,8 @@ struct CircleProgressView: View {
                 isTimerRunning: false,
                 hapticPoints: samplePoints,
                 onTimeTap: {},
-                onPointTap: { _ in }
+                onPointTap: { _ in },
+                onPointDrag: { _, _ in }
             )
 
             CircleProgressView(
@@ -114,7 +119,8 @@ struct CircleProgressView: View {
                 isTimerRunning: true,
                 hapticPoints: samplePoints,
                 onTimeTap: {},
-                onPointTap: { _ in }
+                onPointTap: { _ in },
+                onPointDrag: { _, _ in }
             )
         }
     }

@@ -39,6 +39,9 @@ struct MainTimerView: View {
                         },
                         onPointTap: { point in
                             handlePointTap(point)
+                        },
+                        onPointDrag: { point, newSeconds in
+                            handlePointDrag(point, to: newSeconds)
                         }
                     )
 
@@ -188,6 +191,10 @@ struct MainTimerView: View {
     private func handlePointTap(_ point: HapticPointUI) {
         // TODO: Show pattern selector sheet
         print("Tapped point at \(point.triggerSeconds)s - pattern: \(point.pattern.displayName)")
+    }
+
+    private func handlePointDrag(_ point: HapticPointUI, to newSeconds: Int) {
+        viewModel.updatePointPosition(point.id, to: newSeconds)
     }
 }
 
