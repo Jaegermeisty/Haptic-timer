@@ -6,15 +6,19 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct MainTimerView: View {
     @Environment(PurchaseState.self) private var purchaseState
+    @Environment(TimerCoordinator.self) private var coordinator
+    @Environment(\.modelContext) private var modelContext
     @State private var viewModel = TimerViewModel()
     @State private var hours: Int = 0
     @State private var minutes: Int = 10
     @State private var seconds: Int = 0
     @State private var showingTimePicker = false
     @State private var selectedPoint: HapticPointUI?
+    @State private var showingSaveSheet = false
 
     var body: some View {
         NavigationStack {
@@ -61,6 +65,16 @@ struct MainTimerView: View {
                 .padding()
             }
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if !viewModel.isRunning && purchaseState.isPremium {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: { showingSaveSheet = true }) {
+                            Image(systemName: "square.and.arrow.down")
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+            }
             .sheet(isPresented: $showingTimePicker) {
                 syncPickerToViewModel()
             } content: {
@@ -82,15 +96,25 @@ struct MainTimerView: View {
                         viewModel.removeHapticPoint(point)
                     },
                     onPreview: { pattern in
-                        // TODO: Implement haptic preview
-                        print("Preview pattern: \(pattern.displayName)")
+                        HapticService.shared.playPattern(pattern)
                     }
                 )
                 .presentationDetents([.height(500)])
                 .presentationDragIndicator(.visible)
             }
+            .sheet(isPresented: $showingSaveSheet) {
+                SaveConfigSheet(viewModel: viewModel, modelContext: modelContext)
+                    .presentationDetents([.height(200)])
+                    .presentationDragIndicator(.visible)
+            }
             .onAppear {
                 syncViewModelToPicker()
+            }
+            .onChange(of: coordinator.configurationToLoad) { _, config in
+                if let config = config {
+                    loadConfiguration(config)
+                    coordinator.clearPendingLoad()
+                }
             }
         }
     }
@@ -212,6 +236,21 @@ struct MainTimerView: View {
 
     private func handlePointDrag(_ point: HapticPointUI, to newSeconds: Int) {
         viewModel.updatePointPosition(point.id, to: newSeconds)
+    }
+
+    private func loadConfiguration(_ config: TimerConfiguration) {
+        // Stop any running timer first
+        if viewModel.isRunning {
+            viewModel.reset()
+        }
+
+        // Apply configuration to view model
+        config.applyTo(viewModel)
+
+        // Update picker values
+        hours = viewModel.totalDurationSeconds / 3600
+        minutes = (viewModel.totalDurationSeconds % 3600) / 60
+        seconds = viewModel.totalDurationSeconds % 60
     }
 }
 

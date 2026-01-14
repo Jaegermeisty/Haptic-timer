@@ -43,6 +43,7 @@ class TimerViewModel {
     private var timerCancellable: AnyCancellable?
     private var endDate: Date?
     private var remainingTime: TimeInterval = 0 // For smooth progress animation
+    private var triggeredPointIds: Set<UUID> = [] // Track which points have fired
 
     // MARK: - Computed Properties
     var progress: Double {
@@ -80,6 +81,7 @@ class TimerViewModel {
 
         state = .running
         endDate = Date().addingTimeInterval(TimeInterval(remainingSeconds))
+        triggeredPointIds.removeAll() // Reset triggered points for new run
         startCountdown()
     }
 
@@ -103,6 +105,7 @@ class TimerViewModel {
         remainingSeconds = totalDurationSeconds
         remainingTime = TimeInterval(totalDurationSeconds)
         endDate = nil
+        triggeredPointIds.removeAll()
     }
 
     // MARK: - Haptic Point Management
@@ -191,8 +194,29 @@ class TimerViewModel {
             // Timer completed
             complete()
         } else {
+            let previousSeconds = remainingSeconds
             remainingTime = remaining // Fractional time for smooth animation
             remainingSeconds = Int(ceil(remaining)) // Integer for display
+
+            // Check if we crossed into a new second and trigger haptics
+            if previousSeconds != remainingSeconds {
+                checkAndTriggerHaptics()
+            }
+        }
+    }
+
+    private func checkAndTriggerHaptics() {
+        // Check each haptic point to see if it should fire
+        for point in hapticPoints {
+            // Skip if already triggered
+            guard !triggeredPointIds.contains(point.id) else { continue }
+
+            // Trigger if remaining time matches or just passed the trigger time
+            if remainingSeconds <= point.triggerSeconds {
+                triggeredPointIds.insert(point.id)
+                HapticService.shared.playPattern(point.pattern)
+                print("🎯 Triggered haptic: \(point.pattern.displayName) at \(remainingSeconds)s")
+            }
         }
     }
 

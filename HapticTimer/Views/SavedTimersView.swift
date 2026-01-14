@@ -10,8 +10,9 @@ import SwiftData
 
 struct SavedTimersView: View {
     @Environment(PurchaseState.self) private var purchaseState
+    @Environment(TimerCoordinator.self) private var coordinator
     @Environment(\.modelContext) private var modelContext
-    @Query private var configurations: [TimerConfiguration]
+    @Query(sort: \TimerConfiguration.lastUsedAt, order: .reverse) private var configurations: [TimerConfiguration]
 
     var body: some View {
         NavigationStack {
@@ -39,7 +40,12 @@ struct SavedTimersView: View {
             } else {
                 List {
                     ForEach(configurations) { config in
-                        configurationRow(config)
+                        Button(action: {
+                            loadConfiguration(config)
+                        }) {
+                            configurationRow(config)
+                        }
+                        .buttonStyle(.plain)
                     }
                     .onDelete(perform: deleteConfigurations)
                 }
@@ -97,6 +103,10 @@ struct SavedTimersView: View {
         for index in offsets {
             modelContext.delete(configurations[index])
         }
+    }
+
+    private func loadConfiguration(_ config: TimerConfiguration) {
+        coordinator.loadConfiguration(config)
     }
 }
 

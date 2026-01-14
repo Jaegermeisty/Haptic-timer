@@ -43,6 +43,7 @@ enum Constants {
 
         static let trackColor = Color(hex: "2C2C2E")
         static let defaultOrange = Color(hex: "FF8C42")
+        static let defaultOrangeHex = "FF8C42"
     }
 
     // Purchase

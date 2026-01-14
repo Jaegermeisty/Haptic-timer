@@ -33,4 +33,44 @@ final class TimerConfiguration {
     func updateLastUsed() {
         self.lastUsedAt = Date()
     }
+
+    // MARK: - View Model Integration
+
+    /// Create configuration from current timer view model state
+    convenience init(name: String, from viewModel: TimerViewModel, colorHex: String = Constants.Colors.defaultOrangeHex) {
+        self.init(name: name, durationSeconds: viewModel.totalDurationSeconds, circleColorHex: colorHex)
+
+        // Convert UI haptic points to persistent models
+        self.hapticPoints = viewModel.hapticPoints.map { uiPoint in
+            let point = HapticPoint(
+                triggerSeconds: uiPoint.triggerSeconds,
+                pattern: uiPoint.pattern,
+                isZeroPoint: uiPoint.isZeroPoint
+            )
+            point.configuration = self
+            return point
+        }
+    }
+
+    /// Apply this configuration to a timer view model
+    func applyTo(_ viewModel: TimerViewModel) {
+        // Calculate hours, minutes, seconds from total duration
+        let hours = durationSeconds / 3600
+        let minutes = (durationSeconds % 3600) / 60
+        let seconds = durationSeconds % 60
+
+        viewModel.setDuration(hours: hours, minutes: minutes, seconds: seconds)
+
+        // Convert persistent haptic points to UI models
+        viewModel.hapticPoints = hapticPoints.map { persistentPoint in
+            HapticPointUI(
+                triggerSeconds: persistentPoint.triggerSeconds,
+                pattern: persistentPoint.pattern,
+                isZeroPoint: persistentPoint.isZeroPoint
+            )
+        }
+
+        // Update last used timestamp
+        updateLastUsed()
+    }
 }
