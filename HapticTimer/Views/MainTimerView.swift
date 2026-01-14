@@ -28,16 +28,27 @@ struct MainTimerView: View {
                     CircleProgressView(
                         progress: viewModel.progress,
                         remainingTime: viewModel.remainingSeconds,
+                        totalDuration: viewModel.totalDurationSeconds,
                         color: Constants.Colors.defaultOrange,
                         isTimerRunning: viewModel.isRunning,
+                        hapticPoints: viewModel.hapticPoints,
                         onTimeTap: {
                             if !viewModel.isRunning {
                                 showingTimePicker = true
                             }
+                        },
+                        onPointTap: { point in
+                            handlePointTap(point)
                         }
                     )
 
                     Spacer()
+
+                    // Add Haptic Point Button
+                    if !viewModel.isRunning {
+                        addPointButton
+                            .padding(.bottom, 16)
+                    }
 
                     // Timer Controls
                     timerControls
@@ -61,6 +72,22 @@ struct MainTimerView: View {
                 syncViewModelToPicker()
             }
         }
+    }
+
+    private var addPointButton: some View {
+        Button(action: addHapticPoint) {
+            HStack {
+                Image(systemName: "plus.circle.fill")
+                Text("Add Vibration Point")
+            }
+            .font(.system(size: 16, weight: .medium))
+            .foregroundStyle(viewModel.canAddHapticPoint(isPremium: purchaseState.isPremium) ? .white : .gray)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Constants.Colors.secondaryBackground)
+            .cornerRadius(10)
+        }
+        .disabled(!viewModel.canAddHapticPoint(isPremium: purchaseState.isPremium))
     }
 
     private var timerControls: some View {
@@ -147,6 +174,20 @@ struct MainTimerView: View {
     private func syncPickerToViewModel() {
         // When sheet dismisses, update ViewModel with new picker values
         viewModel.setDuration(hours: hours, minutes: minutes, seconds: seconds)
+    }
+
+    private func addHapticPoint() {
+        if !viewModel.canAddHapticPoint(isPremium: purchaseState.isPremium) && !purchaseState.isPremium {
+            // TODO: Show paywall
+            print("Show paywall - reached free limit")
+            return
+        }
+        viewModel.addHapticPoint(isPremium: purchaseState.isPremium)
+    }
+
+    private func handlePointTap(_ point: HapticPointUI) {
+        // TODO: Show pattern selector sheet
+        print("Tapped point at \(point.triggerSeconds)s - pattern: \(point.pattern.displayName)")
     }
 }
 

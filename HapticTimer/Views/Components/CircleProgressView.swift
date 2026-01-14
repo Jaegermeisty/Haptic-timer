@@ -10,9 +10,12 @@ import SwiftUI
 struct CircleProgressView: View {
     let progress: Double // 0.0 to 1.0
     let remainingTime: Int // in seconds
+    let totalDuration: Int // total seconds for positioning points
     let color: Color
     let isTimerRunning: Bool
+    let hapticPoints: [HapticPointUI]
     let onTimeTap: () -> Void
+    let onPointTap: (HapticPointUI) -> Void
 
     private var circleSize: CGFloat {
         // TODO: Adjust based on device size
@@ -46,6 +49,20 @@ struct CircleProgressView: View {
                 .rotationEffect(.degrees(-90)) // Start at top
                 .animation(.linear, value: progress)
 
+            // Haptic points on circle
+            if totalDuration > 0 {
+                ForEach(hapticPoints) { point in
+                    HapticPointView(
+                        point: point,
+                        circleSize: circleSize,
+                        totalDuration: totalDuration,
+                        onTap: {
+                            onPointTap(point)
+                        }
+                    )
+                }
+            }
+
             // Time display in center (tappable when stopped)
             Button(action: onTimeTap) {
                 VStack(spacing: 4) {
@@ -67,7 +84,13 @@ struct CircleProgressView: View {
 }
 
 #Preview {
-    ZStack {
+    let samplePoints = [
+        HapticPointUI(triggerSeconds: 0, isZeroPoint: true),
+        HapticPointUI(triggerSeconds: 300),
+        HapticPointUI(triggerSeconds: 120)
+    ]
+
+    return ZStack {
         Constants.Colors.background
             .ignoresSafeArea()
 
@@ -75,25 +98,23 @@ struct CircleProgressView: View {
             CircleProgressView(
                 progress: 1.0,
                 remainingTime: 600,
+                totalDuration: 600,
                 color: Constants.Colors.defaultOrange,
                 isTimerRunning: false,
-                onTimeTap: {}
+                hapticPoints: samplePoints,
+                onTimeTap: {},
+                onPointTap: { _ in }
             )
 
             CircleProgressView(
                 progress: 0.5,
                 remainingTime: 300,
+                totalDuration: 600,
                 color: Constants.Colors.defaultOrange,
                 isTimerRunning: true,
-                onTimeTap: {}
-            )
-
-            CircleProgressView(
-                progress: 0.1,
-                remainingTime: 60,
-                color: Constants.Colors.defaultOrange,
-                isTimerRunning: true,
-                onTimeTap: {}
+                hapticPoints: samplePoints,
+                onTimeTap: {},
+                onPointTap: { _ in }
             )
         }
     }
