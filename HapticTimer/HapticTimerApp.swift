@@ -10,9 +10,12 @@ import SwiftData
 
 @main
 struct HapticTimerApp: App {
+    @State private var purchaseState = PurchaseState()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            TimerConfiguration.self,
+            HapticPoint.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +28,8 @@ struct HapticTimerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainTabView()
+                .environment(purchaseState)
         }
         .modelContainer(sharedModelContainer)
     }
