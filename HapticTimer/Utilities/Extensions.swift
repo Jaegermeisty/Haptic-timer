@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CoreGraphics
 
 extension Int {
     /// Format seconds as HH:MM:SS, MM:SS, or SS
@@ -38,6 +39,18 @@ extension Double {
 
     /// Convert radians to degrees
     var degrees: Double {
+        return self * 180 / .pi
+    }
+}
+
+extension CGFloat {
+    /// Convert angle in degrees to radians
+    var radians: CGFloat {
+        return self * .pi / 180
+    }
+
+    /// Convert radians to degrees
+    var degrees: CGFloat {
         return self * 180 / .pi
     }
 }
