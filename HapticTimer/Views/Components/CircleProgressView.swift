@@ -34,7 +34,7 @@ struct CircleProgressView: View {
 
             // Progress fill (drains clockwise from top)
             Circle()
-                .trim(from: 0, to: progress)
+                .trim(from: 1 - progress, to: 1)
                 .stroke(
                     color,
                     style: StrokeStyle(
@@ -44,7 +44,7 @@ struct CircleProgressView: View {
                 )
                 .frame(width: circleSize, height: circleSize)
                 .rotationEffect(.degrees(-90)) // Start at top
-                .animation(.linear(duration: 0.1), value: progress)
+                .animation(.linear, value: progress)
 
             // Time display in center (tappable when stopped)
             Button(action: onTimeTap) {

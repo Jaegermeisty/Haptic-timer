@@ -20,17 +20,19 @@ class TimerViewModel {
     }
 
     var state: TimerState = .idle
-    var remainingSeconds: Int = 0
+    var remainingSeconds: Int = 0 // For display
     var totalDurationSeconds: Int = 0
 
     // MARK: - Private Properties
     private var timerCancellable: AnyCancellable?
     private var endDate: Date?
+    private var remainingTime: TimeInterval = 0 // For smooth progress animation
 
     // MARK: - Computed Properties
     var progress: Double {
         guard totalDurationSeconds > 0 else { return 0 }
-        return Double(remainingSeconds) / Double(totalDurationSeconds)
+        // Use fractional time for smooth animation
+        return remainingTime / Double(totalDurationSeconds)
     }
 
     var isRunning: Bool {
@@ -46,6 +48,7 @@ class TimerViewModel {
         let total = hours * 3600 + minutes * 60 + seconds
         totalDurationSeconds = total
         remainingSeconds = total
+        remainingTime = TimeInterval(total)
     }
 
     func start() {
@@ -77,6 +80,7 @@ class TimerViewModel {
         timerCancellable?.cancel()
         timerCancellable = nil
         remainingSeconds = totalDurationSeconds
+        remainingTime = TimeInterval(totalDurationSeconds)
         endDate = nil
     }
 
@@ -99,13 +103,15 @@ class TimerViewModel {
             // Timer completed
             complete()
         } else {
-            remainingSeconds = Int(ceil(remaining))
+            remainingTime = remaining // Fractional time for smooth animation
+            remainingSeconds = Int(ceil(remaining)) // Integer for display
         }
     }
 
     private func complete() {
         state = .completed
         remainingSeconds = 0
+        remainingTime = 0
         timerCancellable?.cancel()
         timerCancellable = nil
 
