@@ -9,6 +9,9 @@ import SwiftUI
 
 struct PaywallView: View {
     @Environment(PurchaseState.self) private var purchaseState
+    @State private var isPurchasing = false
+    @State private var isRestoring = false
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(spacing: 32) {
@@ -58,19 +61,38 @@ struct PaywallView: View {
 
             VStack(spacing: 16) {
                 Button(action: purchasePremium) {
-                    Text("Upgrade for \(Constants.Purchase.premiumPrice)")
-                        .font(.system(size: 18, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Constants.Colors.defaultOrange)
-                        .foregroundStyle(.white)
-                        .cornerRadius(12)
+                    if isPurchasing {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Text(purchaseButtonText)
+                            .font(.system(size: 18, weight: .semibold))
+                    }
                 }
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Constants.Colors.defaultOrange)
+                .foregroundStyle(.white)
+                .cornerRadius(12)
+                .disabled(isPurchasing || isRestoring)
 
                 Button(action: restorePurchase) {
-                    Text("Restore Purchase")
-                        .font(.system(size: 16))
-                        .foregroundStyle(.gray)
+                    if isRestoring {
+                        ProgressView()
+                            .tint(.gray)
+                    } else {
+                        Text("Restore Purchase")
+                            .font(.system(size: 16))
+                    }
+                }
+                .foregroundStyle(.gray)
+                .disabled(isPurchasing || isRestoring)
+
+                if let error = errorMessage {
+                    Text(error)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
                 }
             }
             .padding(.horizontal)
@@ -78,14 +100,40 @@ struct PaywallView: View {
         .padding()
     }
 
+    private var purchaseButtonText: String {
+        if let product = purchaseState.premiumProduct {
+            return "Upgrade for \(product.displayPrice)"
+        } else {
+            return "Upgrade for \(Constants.Purchase.premiumPrice)"
+        }
+    }
+
     private func purchasePremium() {
-        // TODO: Implement StoreKit 2 purchase
-        // For now, just toggle for testing
-        purchaseState.isPremium = true
+        isPurchasing = true
+        errorMessage = nil
+
+        Task {
+            do {
+                try await purchaseState.purchasePremium()
+                isPurchasing = false
+            } catch StoreError.userCancelled {
+                isPurchasing = false
+                // Don't show error for user cancellation
+            } catch {
+                isPurchasing = false
+                errorMessage = error.localizedDescription
+            }
+        }
     }
 
     private func restorePurchase() {
-        // TODO: Implement restore purchase
+        isRestoring = true
+        errorMessage = nil
+
+        Task {
+            await purchaseState.restorePurchases()
+            isRestoring = false
+        }
     }
 }
 

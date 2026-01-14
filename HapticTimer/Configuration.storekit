@@ -1,0 +1,35 @@
+{
+  "identifier" : "F9E1A2C4",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "6736841268",
+      "localizations" : [
+        {
+          "description" : "Unlock unlimited saved timers, 5 haptic points per timer, and color customization",
+          "displayName" : "Premium Upgrade",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.mathias.haptictimer.premium",
+      "referenceName" : "Premium",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6736841236",
+    "_developerTeamID" : "XXXXXXXXXX",
+    "_lastSynchronizedDate" : 758419200.0
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
