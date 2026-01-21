@@ -59,16 +59,24 @@ final class TimerConfiguration {
         let minutes = (durationSeconds % 3600) / 60
         let seconds = durationSeconds % 60
 
+        // First set duration (this will initialize with a default zero point)
         viewModel.setDuration(hours: hours, minutes: minutes, seconds: seconds)
 
         // Convert persistent haptic points to UI models
-        viewModel.hapticPoints = hapticPoints.map { persistentPoint in
+        var loadedPoints = hapticPoints.map { persistentPoint in
             HapticPointUI(
                 triggerSeconds: persistentPoint.triggerSeconds,
                 pattern: persistentPoint.pattern,
                 isZeroPoint: persistentPoint.isZeroPoint
             )
         }
+
+        // Ensure we have a zero point (in case old configurations don't have one)
+        if !loadedPoints.contains(where: { $0.isZeroPoint }) {
+            loadedPoints.insert(HapticPointUI(triggerSeconds: 0, pattern: .pulse, isZeroPoint: true), at: 0)
+        }
+
+        viewModel.hapticPoints = loadedPoints
 
         // Update last used timestamp
         updateLastUsed()

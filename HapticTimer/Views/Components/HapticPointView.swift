@@ -63,7 +63,11 @@ struct HapticPointView: View {
 
     private func secondsFromAngle(_ angle: Double) -> Int {
         let progress = angle / 360.0
-        let seconds = Int(progress * Double(totalDuration))
+        var seconds = Int(progress * Double(totalDuration))
+
+        // Clamp to valid range
+        seconds = max(0, min(seconds, totalDuration))
+
         return seconds.snappedToInterval()
     }
 
@@ -91,7 +95,7 @@ struct HapticPointView: View {
                     .cornerRadius(6)
                     .position(
                         x: position.x,
-                        y: position.y - 25 // Offset above the point
+                        y: max(20, position.y - 30) // Offset above the point, but keep in bounds
                     )
             }
         }
